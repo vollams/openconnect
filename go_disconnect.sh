@@ -1,10 +1,16 @@
 #!/bin/bash
 . /etc/.db-base 2>/dev/null
+
+# ── Read dynamic config (supports multiple panels) ──
+SERVER_ID=0
+if [ -f /etc/vollam/panel.conf ]; then
+    . /etc/vollam/panel.conf
+fi
+
 DB_USER=${USER}
 DB_PASS=${PASS}
 DB_NAME=${DBNAME}
 DB_HOST=${HOST}
-SERVER_ID=146
 OC_USER=${USERNAME}
 BYTES_IN=${STATS_BYTES_IN:-0}
 BYTES_OUT=${STATS_BYTES_OUT:-0}

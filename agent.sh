@@ -3,10 +3,29 @@
 # VPN Panel Agent - Task Executor
 ###############################################################################
 
-PANEL_URL="https://v2raynet.xyz"
-API_KEY="srv_f9844e56a0594e16914c397090da9ce753f3c7388965d35977189d60f1200570"
+# ── Configuration: read from panel.conf (created by installer) ──
+PANEL_URL=""
+API_KEY=""
 POLL_INTERVAL=10
 LOG_FILE="/var/log/vpn-panel-agent.log"
+
+# Source panel config (supports multiple panel installations)
+if [ -f /etc/vollam/panel.conf ]; then
+    . /etc/vollam/panel.conf
+elif [ -f /etc/.db-base ]; then
+    . /etc/.db-base
+elif [ -f /root/.db-base ]; then
+    . /root/.db-base
+fi
+
+# Validate required config
+if [ -z "$PANEL_URL" ] || [ -z "$API_KEY" ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: PANEL_URL and API_KEY must be set in /etc/vollam/panel.conf" | tee -a "$LOG_FILE"
+    echo "Example /etc/vollam/panel.conf:"
+    echo '  PANEL_URL="https://your-panel.com"'
+    echo '  API_KEY="srv_your_api_key_here"'
+    exit 1
+fi
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"

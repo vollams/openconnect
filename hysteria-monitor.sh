@@ -1,9 +1,22 @@
 #!/bin/bash
 # Hysteria 2 bandwidth monitor - parses journal logs for session stats
-PANEL_URL=https://v2raynet.xyz
-API_KEY=srv_f9844e56a0594e16914c397090da9ce753f3c7388965d35977189d60f1200570
+
+# ── Configuration: read from panel.conf (supports multiple panels) ──
+PANEL_URL=""
+API_KEY=""
+if [ -f /etc/vollam/panel.conf ]; then
+    . /etc/vollam/panel.conf
+elif [ -f /etc/.db-base ]; then
+    . /etc/.db-base
+elif [ -f /root/.db-base ]; then
+    . /root/.db-base
+fi
+
 LOG=/var/log/hysteria-traffic.log
 LAST_TS_FILE=/var/run/hysteria-monitor-lastts
+
+# Skip if no panel config
+[ -z "$PANEL_URL" ] || [ -z "$API_KEY" ] && exit 0
 
 # Get last processed timestamp
 LAST_TS=$(cat "$LAST_TS_FILE" 2>/dev/null || echo "2000-01-01")
