@@ -627,42 +627,6 @@ SQL
 mysql --ssl-verify-server-cert=OFF -u $DB_USER -p$DB_PASS -D $DB_NAME -h $DB_HOST --default-character-set=utf8mb4 -e "$sql"
 
 
-elif [[ $service == "openconnect" ]];
-then
-ocserv=$(systemctl is-active ocserv)
-udphysteria=$(systemctl is-active hysteria-server.service)
-squid=$(systemctl is-active squid)
-ssl=$(systemctl is-active stunnel4)
-socket=$((echo >/dev/tcp/localhost/80) &>/dev/null && echo "active" || echo "inactive")
-totalocserv=$(echo $(occtl -j -n  show users) | jq ". | length")
-total_hysteria=$(ss -unp 2>/dev/null | grep -c ":${hysteria_port:-5666} " || echo 0)
-. /root/.ports
-
-output=$(cat <<EOF
-{
- "service": "openconnect protocol",
- "ip": "$ip",
- "users": "$totalocserv",
- "bandwidth": "$bandwidth",
- "os": "$os",
- "distro": "$distro",
- "cpu": "$cpu",
- "memory": "$memory",
- "disk": "$disk",
- "uptime": "$uptime",
- "udp_hysteria": "$hysteria_port - $udphysteria",
- "tcp_port": "$tcp_port - $ocserv",
- "socket_port": "$socket_port - $socket",
- "squid_port": "$squid_port - $squid",
- "tcp_ssl_port": "$tcp_ssl_port - $ssl",
- "udp_ssl_port": "$udp_ssl_port - $ssl"
-}
-EOF
-)
-
-mysql -u $USER -p$PASS -D $DB -h $HOST -e "UPDATE server_list SET cpu_model='$cpu', distro='$distro', memory='$memory', uptime='$uptime', disk='$disk', bandwidth='$bandwidth', os='$os', proto='$service', tcpssl='$tcp_ssl_port', udpssl='$udp_ssl_port', tcp_status='$tcpovpn', hysteria_status='$udphysteria', udp_status='$udpovpn', ssl_status='$ssl', squid_status='$squid', socket_status='$socket', tcp='$tcp_port', udp='$udp_port', hysteria_port='$hysteria_port', squid='$squid_port', socket='$socket_port', online='$totalocserv', hysteria_online='$total_hysteria' WHERE server_ip='$ip' "
-
-
 elif [[ $service == "pptp" ]];
 then
 pptpd=$(systemctl is-active pptpd)
@@ -689,4 +653,4 @@ elif [[ $service == "reboot" ]];
 then
 sudo shutdown -r now
 fi
-. /etc/.db-base 2>/dev/null; xray_st=$(systemctl is-active xray 2>/dev/null); hyst_st=$(systemctl is-active hysteria-server 2>/dev/null); sdns_st=$(systemctl is-active server-sldns 2>/dev/null); drop_st=$(systemctl is-active dropbear 2>/dev/null); stunnel_st=$(systemctl is-active stunnel4 2>/dev/null); ovpn_tcp=$(systemctl is-active openvpn@server2 2>/dev/null); ovpn_udp=$(systemctl is-active openvpn@server 2>/dev/null); squid_st=$(systemctl is-active squid 2>/dev/null); ssh_st=$(systemctl is-active ssh 2>/dev/null || systemctl is-active sshd 2>/dev/null || echo 'active'); os_v=$(grep -m1 PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"'); cpu_v=$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs); mem_v=$(free -h 2>/dev/null | awk '/^Mem/{print $2"/"$3}'); disk_v=$(df -h / 2>/dev/null | awk 'NR==2{print $3"/"$2}'); uptime_v=$(uptime -p 2>/dev/null | sed 's/up //'); bw_v=$(vnstat --oneline b 2>/dev/null | awk -F';' '{printf "%.2f GB", ($10+0)/1073741824}'); curl -s -X POST "$PANEL_URL/api/v1/endpoints/server.php" -H "Authorization: Bearer $API_KEY" -H 'Content-Type: application/json' -d "{\"action\":\"heartbeat\",\"services\":{\"xray\":\"$xray_st\",\"hysteria\":\"$hyst_st\",\"slowdns\":\"$sdns_st\",\"dropbear\":\"$drop_st\",\"stunnel\":\"$stunnel_st\",\"openvpn_tcp\":\"$ovpn_tcp\",\"openvpn_udp\":\"$ovpn_udp\",\"squid\":\"$squid_st\",\"ssh\":\"$ssh_st\"},\"info\":{\"os\":\"$os_v\",\"cpu_model\":\"$cpu_v\",\"memory\":\"$mem_v\",\"disk\":\"$disk_v\",\"uptime\":\"$uptime_v\",\"bandwidth\":\"$bw_v\"}}" >/dev/null 2>&1
+. /etc/.db-base 2>/dev/null; xray_st=$(systemctl is-active xray 2>/dev/null); hyst_st=$(systemctl is-active hysteria-server 2>/dev/null); sdns_st=$(systemctl is-active server-sldns 2>/dev/null); drop_st=$(systemctl is-active dropbear 2>/dev/null); stunnel_st=$(systemctl is-active stunnel4 2>/dev/null); ovpn_tcp=$(systemctl is-active openvpn@server2 2>/dev/null); ovpn_udp=$(systemctl is-active openvpn@server 2>/dev/null); ocserv_st=$(systemctl is-active ocserv 2>/dev/null); squid_st=$(systemctl is-active squid 2>/dev/null); ssh_st=$(systemctl is-active ssh 2>/dev/null || systemctl is-active sshd 2>/dev/null || echo 'active'); os_v=$(grep -m1 PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"'); cpu_v=$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs); mem_v=$(free -h 2>/dev/null | awk '/^Mem/{print $2"/"$3}'); disk_v=$(df -h / 2>/dev/null | awk 'NR==2{print $3"/"$2}'); uptime_v=$(uptime -p 2>/dev/null | sed 's/up //'); bw_v=$(vnstat --oneline b 2>/dev/null | awk -F';' '{printf "%.2f GB", ($10+0)/1073741824}'); curl -s -X POST "$PANEL_URL/api/v1/endpoints/server.php" -H "Authorization: Bearer $API_KEY" -H 'Content-Type: application/json' -d "{\"action\":\"heartbeat\",\"services\":{\"xray\":\"$xray_st\",\"hysteria\":\"$hyst_st\",\"slowdns\":\"$sdns_st\",\"dropbear\":\"$drop_st\",\"stunnel\":\"$stunnel_st\",\"openvpn_tcp\":\"$ovpn_tcp\",\"openvpn_udp\":\"$ovpn_udp\",\"ocserv\":\"$ocserv_st\",\"squid\":\"$squid_st\",\"ssh\":\"$ssh_st\"},\"info\":{\"os\":\"$os_v\",\"cpu_model\":\"$cpu_v\",\"memory\":\"$mem_v\",\"disk\":\"$disk_v\",\"uptime\":\"$uptime_v\",\"bandwidth\":\"$bw_v\"}}" >/dev/null 2>&1
